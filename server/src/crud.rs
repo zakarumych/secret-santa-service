@@ -109,7 +109,7 @@ pub async fn sqlx_leave_group (data: &LeaveGroupData) -> tide::Result<(String)> 
     }
 
     if sqlx_is_admin_in_group(data.user_id, data.group_id).await? {
-        return Ok(("Admin can't leave group.".to_string()));
+        return Ok(("Admin can't leave its group.".to_string()));
     }
 
     let connection = get_connection().await?;
