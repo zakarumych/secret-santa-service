@@ -5,8 +5,8 @@ use crate::crud;
 use tide::prelude::*;
 use serde_json::{Result, Value};
 use crate::crud::*;
-use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp, JoinGroupResp, StopAdminResp};
-use crate::models::{SetAdminResp};
+use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp};
+use crate::models::{SetAdminResp, LeaveGroupResp, StopAdminResp, JoinGroupResp};
 
 async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_json::Value> {
     let body_str = request.body_string().await.unwrap();
@@ -305,6 +305,48 @@ pub async fn stop_admin(mut request: tide::Request<()>) -> tide::Result<tide::Re
         Ok(tide::Response::builder(201)
             .body(
                 serde_json::to_string::<StopAdminResp>(&StopAdminResp{status})?
+            )
+            .build()
+        )
+    }
+}
+
+pub async fn leave_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
+    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+
+    let json = match json {
+        Ok(json) => json,
+        Err(json) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+    let data = serde_json::from_value::<models::LeaveGroupData>(json);
+
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+    let (status) = sqlx_leave_group(&data).await?;
+
+    return if status != "Success!" {
+        Ok(tide::Response::builder(403)
+            .body(
+                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+            )
+            .build()
+        )
+    } else {
+        Ok(tide::Response::builder(201)
+            .body(
+                serde_json::to_string::<LeaveGroupResp>(&LeaveGroupResp{status})?
             )
             .build()
         )

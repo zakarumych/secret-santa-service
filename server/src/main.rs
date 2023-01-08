@@ -5,7 +5,7 @@ mod models;
 use std::env;
 use tide::prelude::*;
 use tide::utils::async_trait;
-use crate::routes::{create_group, join_group, signup, login, logoff, set_admin, stop_admin};
+use crate::routes::{create_group, join_group, signup, login, logoff, set_admin, stop_admin, leave_group};
 use tide::log;
 
 #[async_std::main]
@@ -23,7 +23,7 @@ async fn main () -> tide::Result<()> {
 
     app.at("/set_admin").post(set_admin); // вернуть статус (пользователь админ)
     app.at("/stop_admin").post(stop_admin); // вернуть статус (не меньше одного админа)
-    //app.at("/leave_group").post(()); // вернуть статус (участник не админ, группа не закрыта или есть ещё хотя бы один админ)
+    app.at("/leave_group").post(leave_group); // вернуть статус (участник не админ, группа не закрыта или есть ещё хотя бы один админ)
     //app.at("/delete_group").delete(()); // вернуть статус (участник админ)
 
     //app.at("/christmas").post(()); // вернуть статус (жеребьевка, запускает админ, группа закрывает)

@@ -91,6 +91,45 @@ pub async fn sqlx_set_admin (data: &SetAdminData) -> tide::Result<(String)> {
     }
 }
 
+pub async fn sqlx_leave_group (data: &LeaveGroupData) -> tide::Result<(String)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string()));
+    }
+
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong token.".to_string()));
+    }
+
+    if !sqlx_is_group_real(data.group_id).await? {
+        return Ok(("Group does not exist.".to_string()));
+    }
+
+    if !sqlx_is_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are already not in this group.".to_string()));
+    }
+
+    if sqlx_is_admin_in_group(data.user_id, data.group_id).await? {
+        return Ok(("Admin can't leave group.".to_string()));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let insert = sqlx::query("DELETE FROM group_users WHERE user_id = ? AND group_id = ?")
+        .bind(data.user_id)
+        .bind(data.group_id)
+        .execute(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if insert.rows_affected() != 0 {
+        Ok(("Success!".to_string()))
+    } else {
+        Ok(("Wrong data.".to_string()))
+    }
+}
+
 pub async fn sqlx_stop_admin (data: &StopAdminData) -> tide::Result<(String)> {
     if !sqlx_is_user_real(data.user_id).await? {
         return Ok(("User does not exist.".to_string()));
