@@ -81,7 +81,7 @@ pub async fn sqlx_login (data: &LoginData) -> tide::Result<(String, String)> {
 
     if !result.is_empty() {
         token = format!("{:x}", md5::compute::<[u8;16]>(rand::random::<[u8;16]>()));
-        sqlx::query("UPDATE users SET token = ? WHERE user_id=?")
+        sqlx::query("UPDATE users SET token = ? AND is_logged = true WHERE user_id=?")
             .bind(&token)
             .bind(&data.user_id)
             .execute(&connection).await?;
@@ -93,4 +93,41 @@ pub async fn sqlx_login (data: &LoginData) -> tide::Result<(String, String)> {
     connection.close().await;
 
     return Ok((token, "Success!".to_string()))
+}
+
+pub async fn sqlx_is_logged(token: &str, user_id: u32) -> bool {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT (*) FROM users WHERE user_id = ? AND token = ? AND is_logged = true")
+        .bind(user_id)
+        .bind(&token)
+        .fetch_one(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.is_empty() {
+        false
+    } else {
+        true
+    }
+}
+
+pub async fn sqlx_logoff (data: &LogoffData) -> tide::Result<String> {
+    if !sqlx_is_logged(&data.token, data.user_id) {
+        return Ok("Wrong password".to_string());
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("UPDATE users SET is_logged = false WHERE user_id = ?")
+        .bind(data.user_id)
+        .fetch_one(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return Ok("Success!".to_string())
 }

@@ -41,3 +41,14 @@ pub struct ErrorStatus {
 pub struct LoginResp {
     pub token: String
 }
+
+#[derive(Debug, Deserialize)]
+pub struct LogoffData {
+    pub token: String,
+    pub user_id: u32
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct LogoffResp {
+    pub status: String,
+}

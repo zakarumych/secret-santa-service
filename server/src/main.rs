@@ -5,7 +5,7 @@ mod models;
 use std::env;
 use tide::prelude::*;
 use tide::utils::async_trait;
-use crate::routes::{create_group, create_user, signup, login};
+use crate::routes::{create_group, create_user, signup, login, logoff};
 use tide::log;
 
 #[async_std::main]
@@ -18,6 +18,7 @@ async fn main () -> tide::Result<()> {
     app.at("/create_group").post(create_group); // вернуть список участников, id группы
     app.at("/signup").post(signup); // вернуть список участников, id группы
     app.at("/login").post(login); // вернуть список участников, id группы
+    app.at("/logoff").post(logoff); // вернуть список участников, id группы
     //app.at("/join_group").post(()); // вернуть список участников, id группы
 
     //app.at("/set_admin").post(()); // вернуть статус (пользователь админ)
