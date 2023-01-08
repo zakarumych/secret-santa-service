@@ -5,7 +5,7 @@ mod models;
 use std::env;
 use tide::prelude::*;
 use tide::utils::async_trait;
-use crate::routes::{create_group, create_user, signup, login, logoff};
+use crate::routes::{create_group, join_group, signup, login, logoff};
 use tide::log;
 
 #[async_std::main]
@@ -14,12 +14,12 @@ async fn main () -> tide::Result<()> {
 
     let mut app = tide::new();
 
-    app.at("/create_user").post(create_user); // уникальное имя, вернуть структуру пользователя
-    app.at("/create_group").post(create_group); // вернуть список участников, id группы
-    app.at("/signup").post(signup); // вернуть список участников, id группы
-    app.at("/login").post(login); // вернуть список участников, id группы
-    app.at("/logoff").post(logoff); // вернуть список участников, id группы
-    //app.at("/join_group").post(()); // вернуть список участников, id группы
+    app.at("/create_group").post(create_group); // вернуть id группы
+
+    app.at("/signup").post(signup); // регистрация участника, set is_logged=true, вернуть токен
+    app.at("/login").post(login); // выполнить вход, перезаписывает токен, если is_logged=true
+    app.at("/logoff").post(logoff); // выход из системы, обнуляет is_logged
+    app.at("/join_group").post(join_group); // вернуть статус
 
     //app.at("/set_admin").post(()); // вернуть статус (пользователь админ)
     //app.at("/stop_admin").post(()); // вернуть статус (не меньше одного админа)

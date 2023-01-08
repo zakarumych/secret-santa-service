@@ -11,27 +11,55 @@ pub async fn get_connection() -> tide::Result<SqlitePool> {
     Ok(pool)
 }
 
-pub async fn sqlx_create_user (user: &CreateUser) -> tide::Result<SqliteQueryResult> {
-    let connection = get_connection().await?;
-    let tx = connection.begin().await.unwrap();
-    let result = sqlx::query("INSERT INTO users (name) VALUES (?)").bind(&user.name).execute(&connection).await?;
-    tx.commit().await?;
-    connection.close().await;
-    Ok(result.into())
-}
+pub async fn sqlx_create_group (data: &CreateGroupData) -> tide::Result<(String, u32)> {
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong password".to_string(), 0));
+    }
 
-pub async fn sqlx_create_group (group: &CreateGroup) -> tide::Result<SqliteQueryResult> {
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
+
     let result = sqlx::query("INSERT INTO groups (is_closed) VALUES (0)").execute(&connection).await?;
-    sqlx::query("INSERT INTO group_users (group_id, user_id, gift_recipient_id, is_admin) VALUES (?, ?, -1, 1)")
+    let insert = sqlx::query("INSERT INTO group_users (group_id, user_id, gift_recipient_id, is_admin) VALUES (?, ?, -1, 1)")
         .bind(result.last_insert_rowid())
-        .bind(group.user_id)
+        .bind(data.user_id)
         .execute(&connection).await?;
 
     tx.commit().await?;
     connection.close().await;
-    Ok(result.into())
+
+    return if insert.rows_affected() != 0 {
+        Ok(("Success!".to_string(), result.last_insert_rowid().try_into().unwrap()))
+    } else {
+        Ok(("Wrong data".to_string(), 0))
+    }
+}
+
+pub async fn sqlx_join_group (data: &JoinGroupData) -> tide::Result<(String)> {
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong token".to_string()));
+    }
+
+    if sqlx_is_in_group(data.user_id, data.group_id).await? {
+        return Ok(("User is already in this group".to_string()));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("INSERT INTO group_users (group_id, user_id, gift_recipient_id, is_admin) VALUES (?, ?, -1, 0)")
+        .bind(data.group_id)
+        .bind(data.user_id)
+        .execute(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.rows_affected() != 0 {
+        Ok(("Success!".to_string()))
+    } else {
+        Ok(("Wrong data".to_string()))
+    }
 }
 
 pub async fn sqlx_signup (data: &SignupData) -> tide::Result<(String, String, u32)> {
@@ -81,9 +109,9 @@ pub async fn sqlx_login (data: &LoginData) -> tide::Result<(String, String)> {
 
     if !result.is_empty() {
         token = format!("{:x}", md5::compute::<[u8;16]>(rand::random::<[u8;16]>()));
-        sqlx::query("UPDATE users SET token = ? AND is_logged = true WHERE user_id=?")
+        sqlx::query("UPDATE users SET token = ?, is_logged = true WHERE user_id=?")
             .bind(&token)
-            .bind(&data.user_id)
+            .bind(data.user_id)
             .execute(&connection).await?;
     } else {
         return Ok(("".to_string(), "Wrong password".to_string()));
@@ -95,36 +123,55 @@ pub async fn sqlx_login (data: &LoginData) -> tide::Result<(String, String)> {
     return Ok((token, "Success!".to_string()))
 }
 
-pub async fn sqlx_is_logged(token: &str, user_id: u32) -> bool {
+pub async fn sqlx_is_logged(token: &str, user_id: u32) -> tide::Result<bool> {
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
 
-    let result = sqlx::query("SELECT (*) FROM users WHERE user_id = ? AND token = ? AND is_logged = true")
+    let result = sqlx::query("SELECT * FROM users WHERE user_id = ? AND token = ? AND is_logged = true")
         .bind(user_id)
         .bind(&token)
-        .fetch_one(&connection).await?;
+        .fetch_all(&connection).await?;
 
     tx.commit().await?;
     connection.close().await;
 
     return if result.is_empty() {
-        false
+        Ok(false)
     } else {
-        true
+        Ok(true)
+    }
+}
+
+pub async fn sqlx_is_in_group(user_id: u32, group_id: u32) -> tide::Result<bool> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT * FROM group_users WHERE user_id = ? AND group_id = ?")
+        .bind(user_id)
+        .bind(group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.is_empty() {
+        Ok(false)
+    } else {
+        Ok(true)
     }
 }
 
 pub async fn sqlx_logoff (data: &LogoffData) -> tide::Result<String> {
-    if !sqlx_is_logged(&data.token, data.user_id) {
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
         return Ok("Wrong password".to_string());
     }
 
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
 
-    let result = sqlx::query("UPDATE users SET is_logged = false WHERE user_id = ?")
+    sqlx::query("UPDATE users SET is_logged = false WHERE user_id = ?")
         .bind(data.user_id)
-        .fetch_one(&connection).await?;
+        .execute(&connection).await?;
 
     tx.commit().await?;
     connection.close().await;
