@@ -1,3 +1,5 @@
+#[allow(unused_variables)]
+
 use crate::models;
 use crate::crud;
 use tide::prelude::*;
@@ -13,9 +15,19 @@ async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_
 
 pub async fn create_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
-    let group = serde_json::from_value::<models::CreateGroupData>(json)?;
+    let data = serde_json::from_value::<models::CreateGroupData>(json);
 
-    let (status, result) = sqlx_create_group(&group).await?;
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+
+    let (status, result) = sqlx_create_group(&data).await?;
     return if status == "Success!" {
         Ok(tide::Response::builder(201)
             .body(
@@ -36,9 +48,18 @@ pub async fn create_group(mut request: tide::Request<()>) -> tide::Result<tide::
 pub async fn join_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     println!("join group endpoint.");
     let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
-    let group = serde_json::from_value::<models::JoinGroupData>(json)?;
+    let data = serde_json::from_value::<models::JoinGroupData>(json);
 
-    let (status) = sqlx_join_group(&group).await?;
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+    let (status) = sqlx_join_group(&data).await?;
 
     return if status == "Success!" {
         Ok (tide::Response::builder(201)
@@ -61,8 +82,16 @@ pub async fn join_group(mut request: tide::Request<()>) -> tide::Result<tide::Re
 pub async fn signup(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
 
-    let data = serde_json::from_value::<models::SignupData>(json)?;
+    let data = serde_json::from_value::<models::SignupData>(json);
 
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
 
     let (token, status, user_id) = sqlx_signup(&data).await?;
 
@@ -86,8 +115,16 @@ pub async fn signup(mut request: tide::Request<()>) -> tide::Result<tide::Respon
 pub async fn login(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
 
-    let data = serde_json::from_value::<models::LoginData>(json)?;
+    let data = serde_json::from_value::<models::LoginData>(json);
 
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
 
     let (token, status) = sqlx_login(&data).await?;
 
@@ -112,7 +149,16 @@ pub async fn login(mut request: tide::Request<()>) -> tide::Result<tide::Respons
 pub async fn logoff(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
 
-    let data = serde_json::from_value::<models::LogoffData>(json)?;
+    let data = serde_json::from_value::<models::LogoffData>(json);
+
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
 
 
     let (status) = sqlx_logoff(&data).await?;
@@ -137,8 +183,16 @@ pub async fn logoff(mut request: tide::Request<()>) -> tide::Result<tide::Respon
 pub async fn set_admin(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
 
-    let data = serde_json::from_value::<models::SetAdminData>(json)?;
+    let data = serde_json::from_value::<models::SetAdminData>(json);
 
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
 
     let (status) = sqlx_set_admin(&data).await?;
 
