@@ -5,7 +5,7 @@ mod models;
 use std::env;
 use tide::prelude::*;
 use tide::utils::async_trait;
-use crate::routes::{create_group, join_group, signup, login, logoff, set_admin};
+use crate::routes::{create_group, join_group, signup, login, logoff, set_admin, stop_admin};
 use tide::log;
 
 #[async_std::main]

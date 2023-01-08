@@ -76,7 +76,7 @@ pub struct SetAdminResp {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct StopData {
+pub struct StopAdminData {
     pub token: String,
     pub user_id: u32,
     pub group_id: u32,

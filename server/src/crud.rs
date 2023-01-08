@@ -140,7 +140,7 @@ pub async fn sqlx_join_group (data: &JoinGroupData) -> tide::Result<(String)> {
     }
 
     if !sqlx_is_logged(&data.token, data.user_id).await? {
-        return Ok(("Wrong token".to_string()));
+        return Ok(("Wrong token.".to_string()));
     }
 
     if !sqlx_is_group_real(data.group_id).await? {
@@ -148,7 +148,7 @@ pub async fn sqlx_join_group (data: &JoinGroupData) -> tide::Result<(String)> {
     }
 
     if sqlx_is_in_group(data.user_id, data.group_id).await? {
-        return Ok(("User is already in this group".to_string()));
+        return Ok(("User is already in this group.".to_string()));
     }
 
     let connection = get_connection().await?;
@@ -221,7 +221,7 @@ pub async fn sqlx_login (data: &LoginData) -> tide::Result<(String, String)> {
             .bind(data.user_id)
             .execute(&connection).await?;
     } else {
-        return Ok(("".to_string(), "Wrong password".to_string()));
+        return Ok(("".to_string(), "Wrong password.".to_string()));
     }
 
     tx.commit().await?;
@@ -270,7 +270,7 @@ async fn sqlx_is_in_group(user_id: u32, group_id: u32) -> tide::Result<bool> {
 
 pub async fn sqlx_logoff (data: &LogoffData) -> tide::Result<String> {
     if !sqlx_is_logged(&data.token, data.user_id).await? {
-        return Ok("Wrong password".to_string());
+        return Ok("Wrong password.".to_string());
     }
 
     let connection = get_connection().await?;

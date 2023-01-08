@@ -5,7 +5,7 @@ use crate::crud;
 use tide::prelude::*;
 use serde_json::{Result, Value};
 use crate::crud::*;
-use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp, JoinGroupResp};
+use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp, JoinGroupResp, StopAdminResp};
 use crate::models::{SetAdminResp};
 
 async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_json::Value> {
@@ -239,7 +239,7 @@ pub async fn stop_admin(mut request: tide::Request<()>) -> tide::Result<tide::Re
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<SetAdminResp>(&StopAdminResp{status})?
+                serde_json::to_string::<StopAdminResp>(&StopAdminResp{status})?
             )
             .build()
         )
