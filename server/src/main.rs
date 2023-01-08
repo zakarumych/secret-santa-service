@@ -22,7 +22,7 @@ async fn main () -> tide::Result<()> {
     app.at("/join_group").post(join_group); // вернуть статус
 
     app.at("/set_admin").post(set_admin); // вернуть статус (пользователь админ)
-    //app.at("/stop_admin").post(()); // вернуть статус (не меньше одного админа)
+    app.at("/stop_admin").post(stop_admin); // вернуть статус (не меньше одного админа)
     //app.at("/leave_group").post(()); // вернуть статус (участник не админ, группа не закрыта или есть ещё хотя бы один админ)
     //app.at("/delete_group").delete(()); // вернуть статус (участник админ)
 

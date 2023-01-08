@@ -91,6 +91,49 @@ pub async fn sqlx_set_admin (data: &SetAdminData) -> tide::Result<(String)> {
     }
 }
 
+pub async fn sqlx_stop_admin (data: &StopAdminData) -> tide::Result<(String)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string()));
+    }
+
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong token.".to_string()));
+    }
+
+    if !sqlx_is_group_real(data.group_id).await? {
+        return Ok(("Group does not exist.".to_string()));
+    }
+
+    if !sqlx_is_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are not in this group.".to_string()));
+    }
+
+    if !sqlx_is_admin_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are not an admin.".to_string()));
+    }
+
+    if sqlx_is_admin_count_in_group(data.group_id).await? == 1 {
+        return Ok(("You are the only admin.".to_string()));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let insert = sqlx::query("UPDATE group_users SET is_admin = false WHERE user_id=? AND group_id=?")
+        .bind(data.user_id)
+        .bind(data.group_id)
+        .execute(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if insert.rows_affected() != 0 {
+        Ok(("Success!".to_string()))
+    } else {
+        Ok(("Wrong data.".to_string()))
+    }
+}
+
 pub async fn sqlx_join_group (data: &JoinGroupData) -> tide::Result<(String)> {
     if !sqlx_is_user_real(data.user_id).await? {
         return Ok(("User does not exist.".to_string()));
@@ -300,4 +343,18 @@ async fn sqlx_is_group_real(group_id: u32) -> tide::Result<bool> {
     } else {
         Ok(true)
     }
+}
+
+async fn sqlx_is_admin_count_in_group(group_id: u32) -> tide::Result<usize> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT * FROM group_users WHERE group_id = ? and is_admin = true")
+        .bind(group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    Ok(result.len())
 }

@@ -212,3 +212,36 @@ pub async fn set_admin(mut request: tide::Request<()>) -> tide::Result<tide::Res
         )
     }
 }
+
+pub async fn stop_admin(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
+    let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
+
+    let data = serde_json::from_value::<models::StopAdminData>(json);
+
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+    let (status) = sqlx_stop_admin(&data).await?;
+
+    return if status != "Success!" {
+        Ok(tide::Response::builder(403)
+            .body(
+                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+            )
+            .build()
+        )
+    } else {
+        Ok(tide::Response::builder(201)
+            .body(
+                serde_json::to_string::<SetAdminResp>(&StopAdminResp{status})?
+            )
+            .build()
+        )
+    }
+}
