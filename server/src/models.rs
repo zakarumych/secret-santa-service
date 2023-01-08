@@ -98,3 +98,15 @@ pub struct LeaveGroupData {
 pub struct LeaveGroupResp {
     pub status: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteGroupData {
+    pub token: String,
+    pub user_id: u32,
+    pub group_id: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DeleteGroupResp {
+    pub status: String,
+}
