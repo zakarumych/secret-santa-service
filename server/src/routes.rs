@@ -4,6 +4,7 @@ use tide::prelude::*;
 use serde_json::{Result, Value};
 use crate::crud::*;
 use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp, JoinGroupResp};
+use crate::models::{SetAdminResp};
 
 async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_json::Value> {
     let body_str = request.body_string().await.unwrap();
@@ -127,6 +128,31 @@ pub async fn logoff(mut request: tide::Request<()>) -> tide::Result<tide::Respon
         Ok(tide::Response::builder(201)
             .body(
                 serde_json::to_string::<LogoffResp>(&LogoffResp{status})?
+            )
+            .build()
+        )
+    }
+}
+
+pub async fn set_admin(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
+    let json: serde_json::Value = get_json_params(&mut request).await.unwrap();
+
+    let data = serde_json::from_value::<models::SetAdminData>(json)?;
+
+
+    let (status) = sqlx_set_admin(&data).await?;
+
+    return if status != "Success!" {
+        Ok(tide::Response::builder(403)
+            .body(
+                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+            )
+            .build()
+        )
+    } else {
+        Ok(tide::Response::builder(201)
+            .body(
+                serde_json::to_string::<SetAdminResp>(&SetAdminResp{status})?
             )
             .build()
         )

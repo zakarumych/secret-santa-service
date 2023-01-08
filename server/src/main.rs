@@ -5,7 +5,7 @@ mod models;
 use std::env;
 use tide::prelude::*;
 use tide::utils::async_trait;
-use crate::routes::{create_group, join_group, signup, login, logoff};
+use crate::routes::{create_group, join_group, signup, login, logoff, set_admin};
 use tide::log;
 
 #[async_std::main]
@@ -21,7 +21,7 @@ async fn main () -> tide::Result<()> {
     app.at("/logoff").post(logoff); // выход из системы, обнуляет is_logged
     app.at("/join_group").post(join_group); // вернуть статус
 
-    //app.at("/set_admin").post(()); // вернуть статус (пользователь админ)
+    app.at("/set_admin").post(set_admin); // вернуть статус (пользователь админ)
     //app.at("/stop_admin").post(()); // вернуть статус (не меньше одного админа)
     //app.at("/leave_group").post(()); // вернуть статус (участник не админ, группа не закрыта или есть ещё хотя бы один админ)
     //app.at("/delete_group").delete(()); // вернуть статус (участник админ)

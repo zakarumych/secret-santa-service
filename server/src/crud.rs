@@ -5,6 +5,7 @@ use crate::models::*;
 use md5;
 use rand::prelude::*;
 use sqlx::Row;
+use sqlx::ColumnIndex;
 
 async fn get_connection() -> tide::Result<SqlitePool> {
     let pool = SqlitePoolOptions::new().connect("sqlite:app.db").await?;
@@ -12,8 +13,12 @@ async fn get_connection() -> tide::Result<SqlitePool> {
 }
 
 pub async fn sqlx_create_group (data: &CreateGroupData) -> tide::Result<(String, u32)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok((("User does not exist.".to_string()), 0));
+    }
+
     if !sqlx_is_logged(&data.token, data.user_id).await? {
-        return Ok(("Wrong password".to_string(), 0));
+        return Ok((("Wrong token.".to_string()), 0));
     }
 
     let connection = get_connection().await?;
@@ -35,9 +40,68 @@ pub async fn sqlx_create_group (data: &CreateGroupData) -> tide::Result<(String,
     }
 }
 
+pub async fn sqlx_set_admin (data: &SetAdminData) -> tide::Result<(String)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string()));
+    }
+
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong token.".to_string()));
+    }
+
+    if !sqlx_is_group_real(data.group_id).await? {
+        return Ok(("Group does not exist.".to_string()));
+    }
+
+    if !sqlx_is_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are not in this group.".to_string()));
+    }
+
+    if !sqlx_is_user_real(data.new_admin_id).await? {
+        return Ok(("New admin does not exist.".to_string()));
+    }
+
+    if !sqlx_is_in_group(data.new_admin_id, data.group_id).await? {
+        return Ok(("New admin not in this group.".to_string()));
+    }
+
+    if !sqlx_is_admin_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are not an admin.".to_string()));
+    }
+
+    if sqlx_is_admin_in_group(data.new_admin_id, data.group_id).await? {
+        return Ok(("New admin is already an admin.".to_string()));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let insert = sqlx::query("UPDATE group_users SET is_admin = true WHERE user_id=? AND group_id=?")
+        .bind(data.new_admin_id)
+        .bind(data.group_id)
+        .execute(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if insert.rows_affected() != 0 {
+        Ok(("Success!".to_string()))
+    } else {
+        Ok(("Wrong data.".to_string()))
+    }
+}
+
 pub async fn sqlx_join_group (data: &JoinGroupData) -> tide::Result<(String)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string()));
+    }
+
     if !sqlx_is_logged(&data.token, data.user_id).await? {
         return Ok(("Wrong token".to_string()));
+    }
+
+    if !sqlx_is_group_real(data.group_id).await? {
+        return Ok(("Group does not exist.".to_string()));
     }
 
     if sqlx_is_in_group(data.user_id, data.group_id).await? {
@@ -194,10 +258,46 @@ async fn sqlx_is_admin_in_group(user_id: u32, group_id: u32) -> tide::Result<boo
     return if result.is_empty() {
         Ok(false)
     } else {
-        return if result[0].is_admin == 0 {
+        return if result[0].get::<u32, &str>("is_admin") == 0 {
             Ok(false)
         } else {
             Ok(true)
         }
+    }
+}
+
+async fn sqlx_is_user_real(user_id: u32) -> tide::Result<bool> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT * FROM users WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.is_empty() {
+        Ok(false)
+    } else {
+        Ok(true)
+    }
+}
+
+async fn sqlx_is_group_real(group_id: u32) -> tide::Result<bool> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT * FROM groups WHERE group_id = ?")
+        .bind(group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.is_empty() {
+        Ok(false)
+    } else {
+        Ok(true)
     }
 }

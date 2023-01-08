@@ -61,3 +61,16 @@ pub struct LogoffData {
 pub struct LogoffResp {
     pub status: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct SetAdminData {
+    pub token: String,
+    pub user_id: u32,
+    pub group_id: u32,
+    pub new_admin_id: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SetAdminResp {
+    pub status: String,
+}
