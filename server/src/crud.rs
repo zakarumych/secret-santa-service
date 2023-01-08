@@ -6,7 +6,7 @@ use md5;
 use rand::prelude::*;
 use sqlx::Row;
 
-pub async fn get_connection() -> tide::Result<SqlitePool> {
+async fn get_connection() -> tide::Result<SqlitePool> {
     let pool = SqlitePoolOptions::new().connect("sqlite:app.db").await?;
     Ok(pool)
 }
@@ -123,7 +123,7 @@ pub async fn sqlx_login (data: &LoginData) -> tide::Result<(String, String)> {
     return Ok((token, "Success!".to_string()))
 }
 
-pub async fn sqlx_is_logged(token: &str, user_id: u32) -> tide::Result<bool> {
+async fn sqlx_is_logged(token: &str, user_id: u32) -> tide::Result<bool> {
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
 
@@ -142,7 +142,7 @@ pub async fn sqlx_is_logged(token: &str, user_id: u32) -> tide::Result<bool> {
     }
 }
 
-pub async fn sqlx_is_in_group(user_id: u32, group_id: u32) -> tide::Result<bool> {
+async fn sqlx_is_in_group(user_id: u32, group_id: u32) -> tide::Result<bool> {
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
 
@@ -177,4 +177,27 @@ pub async fn sqlx_logoff (data: &LogoffData) -> tide::Result<String> {
     connection.close().await;
 
     return Ok("Success!".to_string())
+}
+
+async fn sqlx_is_admin_in_group(user_id: u32, group_id: u32) -> tide::Result<bool> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT is_admin FROM group_users WHERE user_id = ? AND group_id = ?")
+        .bind(user_id)
+        .bind(group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.is_empty() {
+        Ok(false)
+    } else {
+        return if result[0].is_admin == 0 {
+            Ok(false)
+        } else {
+            Ok(true)
+        }
+    }
 }
