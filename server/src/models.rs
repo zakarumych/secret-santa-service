@@ -110,3 +110,15 @@ pub struct DeleteGroupData {
 pub struct DeleteGroupResp {
     pub status: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ChristmasData {
+    pub token: String,
+    pub user_id: u32,
+    pub group_id: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ChristmasResp {
+    pub status: String,
+}

@@ -1,4 +1,5 @@
 use std::fmt::format;
+use std::mem::swap;
 use sqlx::sqlite::{SqlitePoolOptions, SqlitePool, SqliteQueryResult};
 use std::str::FromStr;
 use crate::models::*;
@@ -6,6 +7,7 @@ use md5;
 use rand::prelude::*;
 use sqlx::Row;
 use sqlx::ColumnIndex;
+use rand::seq::SliceRandom;
 
 async fn get_connection() -> tide::Result<SqlitePool> {
     let pool = SqlitePoolOptions::new().connect("sqlite:app.db").await?;
@@ -189,7 +191,7 @@ pub async fn sqlx_stop_admin (data: &StopAdminData) -> tide::Result<(String)> {
         return Ok(("You are not an admin.".to_string()));
     }
 
-    if sqlx_is_admin_count_in_group(data.group_id).await? == 1 {
+    if sqlx_admin_count_in_group(data.group_id).await? == 1 {
         return Ok(("You are the only admin.".to_string()));
     }
 
@@ -205,6 +207,83 @@ pub async fn sqlx_stop_admin (data: &StopAdminData) -> tide::Result<(String)> {
     connection.close().await;
 
     return if insert.rows_affected() != 0 {
+        Ok(("Success!".to_string()))
+    } else {
+        Ok(("Wrong data.".to_string()))
+    }
+}
+
+pub async fn sqlx_christmas (data: &ChristmasData) -> tide::Result<(String)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string()));
+    }
+
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong token.".to_string()));
+    }
+
+    if !sqlx_is_group_real(data.group_id).await? {
+        return Ok(("Group does not exist.".to_string()));
+    }
+
+    if !sqlx_is_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are not in this group.".to_string()));
+    }
+
+    if !sqlx_is_admin_in_group(data.user_id, data.group_id).await? {
+        return Ok(("You are not an admin.".to_string()));
+    }
+
+    if sqlx_user_count_in_group(data.group_id).await? < 2 {
+        return Ok(("There are less than 2 users in this group.".to_string()));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    sqlx::query("UPDATE groups SET is_closed=true WHERE group_id=?")
+        .bind(data.group_id)
+        .execute(&connection).await?;
+
+    let select = sqlx::query("SELECT user_id FROM group_users WHERE group_id=?")
+        .bind(data.group_id)
+        .fetch_all(&connection).await?;
+
+
+    let mut users: Vec<u32> = Vec::with_capacity(select.len());
+    for i in 0..(select.len()) {
+        users.push(select[i].get::<u32, &str>("user_id"));
+    }
+
+    let mut gift_recipients = users.to_vec();
+    gift_recipients.shuffle(&mut rand::thread_rng());
+
+    println!("select[{}] users[{}] gift_recipient[{}]", select.len(), users.len(), gift_recipients.len());
+
+    for i in 0..(users.len()) {
+        if gift_recipients[i] == users[i] {
+            if i != users.len()-1 {
+                gift_recipients.swap(i, i+1)
+            } else {
+                gift_recipients.swap(0, users.len()-1);
+            }
+        }
+    }
+
+    for i in 0..(select.len()) {
+        sqlx::query("UPDATE group_users SET gift_recipient_id=? WHERE group_id=? and user_id=?")
+            .bind(gift_recipients[i])
+            .bind(data.group_id)
+            .bind(users[i])
+            .execute(&connection).await?;
+    }
+
+    // result[0].get::<u32, &str>("is_admin") == 0
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if select.len() != 0 {
         Ok(("Success!".to_string()))
     } else {
         Ok(("Wrong data.".to_string()))
@@ -422,11 +501,25 @@ async fn sqlx_is_group_real(group_id: u32) -> tide::Result<bool> {
     }
 }
 
-async fn sqlx_is_admin_count_in_group(group_id: u32) -> tide::Result<usize> {
+async fn sqlx_admin_count_in_group(group_id: u32) -> tide::Result<usize> {
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
 
     let result = sqlx::query("SELECT * FROM group_users WHERE group_id = ? and is_admin = true")
+        .bind(group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    Ok(result.len())
+}
+
+async fn sqlx_user_count_in_group(group_id: u32) -> tide::Result<usize> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT * FROM group_users WHERE group_id = ?")
         .bind(group_id)
         .fetch_all(&connection).await?;
 

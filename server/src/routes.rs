@@ -6,7 +6,7 @@ use tide::prelude::*;
 use serde_json::{Result, Value};
 use crate::crud::*;
 use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp};
-use crate::models::{SetAdminResp, LeaveGroupResp, StopAdminResp, JoinGroupResp, DeleteGroupResp};
+use crate::models::{SetAdminResp, LeaveGroupResp, StopAdminResp, JoinGroupResp, DeleteGroupResp, ChristmasResp};
 
 async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_json::Value> {
     let body_str = request.body_string().await.unwrap();
@@ -389,6 +389,48 @@ pub async fn delete_group(mut request: tide::Request<()>) -> tide::Result<tide::
         Ok(tide::Response::builder(201)
             .body(
                 serde_json::to_string::<DeleteGroupResp>(&DeleteGroupResp{status})?
+            )
+            .build()
+        )
+    }
+}
+
+pub async fn christmas(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
+    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+
+    let json = match json {
+        Ok(json) => json,
+        Err(json) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+    let data = serde_json::from_value::<models::ChristmasData>(json);
+
+    let data = match data {
+        Ok(data) => data,
+        Err(data) => return Ok(
+            tide::Response::builder(422)
+                .body("{\"reason\": \"Wrong syntax\"}")
+                .build()
+        )
+    };
+
+    let (status) = sqlx_christmas(&data).await?;
+
+    return if status != "Success!" {
+        Ok(tide::Response::builder(403)
+            .body(
+                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+            )
+            .build()
+        )
+    } else {
+        Ok(tide::Response::builder(201)
+            .body(
+                serde_json::to_string::<ChristmasResp>(&ChristmasResp{status})?
             )
             .build()
         )
