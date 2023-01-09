@@ -34,7 +34,7 @@ pub async fn sqlx_create_group (data: &models::CreateGroupData) -> tide::Result<
     return if insert.rows_affected() != 0 {
         Ok(("Success!".to_string(), result.last_insert_rowid().try_into().unwrap()))
     } else {
-        Ok(("Wrong data".to_string(), 0))
+        Ok(("Wrong data.".to_string(), 0))
     }
 }
 
@@ -329,7 +329,7 @@ pub async fn sqlx_join_group (data: &models::JoinGroupData) -> tide::Result<Stri
     return if result.rows_affected() != 0 {
         Ok("Success!".to_string())
     } else {
-        Ok("Wrong data".to_string())
+        Ok("Wrong data.".to_string())
     }
 }
 
@@ -442,7 +442,7 @@ async fn sqlx_is_in_group(user_id: u32, group_id: u32) -> tide::Result<bool> {
 
 pub async fn sqlx_logoff (data: &models::LogoffData) -> tide::Result<String> {
     if !sqlx_is_logged(&data.token, data.user_id).await? {
-        return Ok("Wrong password.".to_string());
+        return Ok("Wrong token.".to_string());
     }
 
     let connection = get_connection().await?;
