@@ -1,13 +1,6 @@
-#[allow(unused_variables)]
-
 use crate::models;
 use crate::crud;
-use tide::prelude::*;
-use serde_json::{Result, Value};
-use crate::crud::*;
-use crate::models::{ErrorStatus, LoginResp, SignupResp, LogoffResp, CreateGroupResp, GetUserNameByIdResp, GetUserNameByIdData};
-use crate::models::{SetAdminResp, LeaveGroupResp, StopAdminResp, JoinGroupResp,
-                    DeleteGroupResp, ChristmasResp, GetGiftRecipientIdResp};
+use serde_json;
 
 async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_json::Value> {
     let body_str = request.body_string().await.unwrap();
@@ -15,22 +8,22 @@ async fn get_json_params(request: &mut tide::Request<()>) -> tide::Result<serde_
 }
 
 pub async fn get_gift_recipient_id(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::GetGiftRecipientIdData>(json);
+    let _data = serde_json::from_value::<models::GetGiftRecipientIdData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok (
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok (
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
@@ -38,18 +31,18 @@ pub async fn get_gift_recipient_id(mut request: tide::Request<()>) -> tide::Resu
     };
 
 
-    let (status, gift_recipient_id) = sqlx_get_gift_recipient_id(&data).await?;
+    let (status, gift_recipient_id) = crud::sqlx_get_gift_recipient_id(&_data).await?;
     return if status == "Success!" {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<GetGiftRecipientIdResp>(&GetGiftRecipientIdResp {gift_recipient_id})?
+                serde_json::to_string::<models::GetGiftRecipientIdResp>(&models::GetGiftRecipientIdResp {gift_recipient_id})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(422)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus {reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus {reason:status})?
             )
             .build()
         )
@@ -57,22 +50,22 @@ pub async fn get_gift_recipient_id(mut request: tide::Request<()>) -> tide::Resu
 }
 
 pub async fn create_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::CreateGroupData>(json);
+    let _data = serde_json::from_value::<models::CreateGroupData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
@@ -80,18 +73,18 @@ pub async fn create_group(mut request: tide::Request<()>) -> tide::Result<tide::
     };
 
 
-    let (status, result) = sqlx_create_group(&data).await?;
+    let (status, result) = crud::sqlx_create_group(&_data).await?;
     return if status == "Success!" {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<CreateGroupResp>(&CreateGroupResp {group_id: result })?
+                serde_json::to_string::<models::CreateGroupResp>(&models::CreateGroupResp {group_id: result })?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(422)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus {reason: status })?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus {reason: status })?
             )
             .build()
         )
@@ -100,41 +93,41 @@ pub async fn create_group(mut request: tide::Request<()>) -> tide::Result<tide::
 
 pub async fn join_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
     //println!("join group endpoint.");
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::JoinGroupData>(json);
+    let _data = serde_json::from_value::<models::JoinGroupData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status) = sqlx_join_group(&data).await?;
+    let status = crud::sqlx_join_group(&_data).await?;
 
     return if status == "Success!" {
         Ok (tide::Response::builder(201)
             .body(
-                serde_json::to_string::<JoinGroupResp>(&JoinGroupResp {status})?
+                serde_json::to_string::<models::JoinGroupResp>(&models::JoinGroupResp {status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(422)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus {reason: status })?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus {reason: status })?
             )
             .build()
         )
@@ -143,41 +136,41 @@ pub async fn join_group(mut request: tide::Request<()>) -> tide::Result<tide::Re
 
 
 pub async fn signup(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::SignupData>(json);
+    let _data = serde_json::from_value::<models::SignupData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (token, status, user_id) = sqlx_signup(&data).await?;
+    let (token, status, user_id) = crud::sqlx_signup(&_data).await?;
 
     return if token.len() == 0 {
         Ok(tide::Response::builder(422)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus {reason: status })?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus {reason: status })?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<SignupResp>(&SignupResp { token, user_id })?
+                serde_json::to_string::<models::SignupResp>(&models::SignupResp { token, user_id })?
             )
             .build()
         )
@@ -185,41 +178,41 @@ pub async fn signup(mut request: tide::Request<()>) -> tide::Result<tide::Respon
 }
 
 pub async fn login(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::LoginData>(json);
+    let _data = serde_json::from_value::<models::LoginData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (token, status) = sqlx_login(&data).await?;
+    let (token, status) = crud::sqlx_login(&_data).await?;
 
     return if token.len() == 0 {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<LoginResp>(&LoginResp{token})?
+                serde_json::to_string::<models::LoginResp>(&models::LoginResp{token})?
             )
             .build()
         )
@@ -228,22 +221,22 @@ pub async fn login(mut request: tide::Request<()>) -> tide::Result<tide::Respons
 
 
 pub async fn logoff(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::LogoffData>(json);
+    let _data = serde_json::from_value::<models::LogoffData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
@@ -251,19 +244,19 @@ pub async fn logoff(mut request: tide::Request<()>) -> tide::Result<tide::Respon
     };
 
 
-    let (status) = sqlx_logoff(&data).await?;
+    let status = crud::sqlx_logoff(&_data).await?;
 
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<LogoffResp>(&LogoffResp{status})?
+                serde_json::to_string::<models::LogoffResp>(&models::LogoffResp{status})?
             )
             .build()
         )
@@ -271,41 +264,41 @@ pub async fn logoff(mut request: tide::Request<()>) -> tide::Result<tide::Respon
 }
 
 pub async fn set_admin(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::SetAdminData>(json);
+    let _data = serde_json::from_value::<models::SetAdminData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status) = sqlx_set_admin(&data).await?;
+    let status = crud::sqlx_set_admin(&_data).await?;
 
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<SetAdminResp>(&SetAdminResp{status})?
+                serde_json::to_string::<models::SetAdminResp>(&models::SetAdminResp{status})?
             )
             .build()
         )
@@ -313,41 +306,41 @@ pub async fn set_admin(mut request: tide::Request<()>) -> tide::Result<tide::Res
 }
 
 pub async fn stop_admin(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::StopAdminData>(json);
+    let _data = serde_json::from_value::<models::StopAdminData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status) = sqlx_stop_admin(&data).await?;
+    let status = crud::sqlx_stop_admin(&_data).await?;
 
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<StopAdminResp>(&StopAdminResp{status})?
+                serde_json::to_string::<models::StopAdminResp>(&models::StopAdminResp{status})?
             )
             .build()
         )
@@ -355,41 +348,41 @@ pub async fn stop_admin(mut request: tide::Request<()>) -> tide::Result<tide::Re
 }
 
 pub async fn leave_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::LeaveGroupData>(json);
+    let _data = serde_json::from_value::<models::LeaveGroupData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status) = sqlx_leave_group(&data).await?;
+    let status = crud::sqlx_leave_group(&_data).await?;
 
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<LeaveGroupResp>(&LeaveGroupResp{status})?
+                serde_json::to_string::<models::LeaveGroupResp>(&models::LeaveGroupResp{status})?
             )
             .build()
         )
@@ -397,41 +390,41 @@ pub async fn leave_group(mut request: tide::Request<()>) -> tide::Result<tide::R
 }
 
 pub async fn delete_group(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::DeleteGroupData>(json);
+    let _data = serde_json::from_value::<models::DeleteGroupData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status) = sqlx_delete_group(&data).await?;
+    let status = crud::sqlx_delete_group(&_data).await?;
 
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<DeleteGroupResp>(&DeleteGroupResp{status})?
+                serde_json::to_string::<models::DeleteGroupResp>(&models::DeleteGroupResp{status})?
             )
             .build()
         )
@@ -439,41 +432,41 @@ pub async fn delete_group(mut request: tide::Request<()>) -> tide::Result<tide::
 }
 
 pub async fn christmas(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::ChristmasData>(json);
+    let _data = serde_json::from_value::<models::ChristmasData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status) = sqlx_christmas(&data).await?;
+    let status = crud::sqlx_christmas(&_data).await?;
 
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<ChristmasResp>(&ChristmasResp{status})?
+                serde_json::to_string::<models::ChristmasResp>(&models::ChristmasResp{status})?
             )
             .build()
         )
@@ -481,41 +474,41 @@ pub async fn christmas(mut request: tide::Request<()>) -> tide::Result<tide::Res
 }
 
 pub async fn get_user_name_by_id(mut request: tide::Request<()>) -> tide::Result<tide::Response> {
-    let json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
+    let _json: tide::Result<serde_json::Value> = get_json_params(&mut request).await;
 
-    let json = match json {
-        Ok(json) => json,
-        Err(json) => return Ok(
+    let _json = match _json {
+        Ok(_json) => _json,
+        Err(_json) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let data = serde_json::from_value::<models::GetUserNameByIdData>(json);
+    let _data = serde_json::from_value::<models::GetUserNameByIdData>(_json);
 
-    let data = match data {
-        Ok(data) => data,
-        Err(data) => return Ok(
+    let _data = match _data {
+        Ok(_data) => _data,
+        Err(_data) => return Ok(
             tide::Response::builder(422)
                 .body("{\"reason\": \"Wrong syntax\"}")
                 .build()
         )
     };
 
-    let (status, name) = sqlx_user_name_by_id(&data).await?;
+    let (status, name) = crud::sqlx_user_name_by_id(&_data).await?;
     println!("{}", name);
     return if status != "Success!" {
         Ok(tide::Response::builder(403)
             .body(
-                serde_json::to_string::<ErrorStatus>(&ErrorStatus{ reason: status})?
+                serde_json::to_string::<models::ErrorStatus>(&models::ErrorStatus{ reason: status})?
             )
             .build()
         )
     } else {
         Ok(tide::Response::builder(201)
             .body(
-                serde_json::to_string::<GetUserNameByIdResp>(&GetUserNameByIdResp{name})?
+                serde_json::to_string::<models::GetUserNameByIdResp>(&models::GetUserNameByIdResp{name})?
             )
             .build()
         )
