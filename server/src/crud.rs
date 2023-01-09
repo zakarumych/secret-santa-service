@@ -11,7 +11,8 @@ use sqlx::ColumnIndex;
 use rand::seq::SliceRandom;
 
 async fn get_connection() -> tide::Result<SqlitePool> {
-    let pool = SqlitePoolOptions::new().connect("sqlite:app.db").await?;
+    let pool = SqlitePoolOptions::new().
+        connect(&*std::env::var("SQLITE_DB_URL").expect("SQLITE_DB_URL must be set.")).await?;
     Ok(pool)
 }
 

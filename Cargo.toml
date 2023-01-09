@@ -8,3 +8,4 @@ edition = "2021"
 members = [".", "server", "client"]
 
 [dependencies]
+dotenv = "0.15.0"
