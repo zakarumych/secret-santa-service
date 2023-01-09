@@ -1,4 +1,5 @@
 use std::fmt::format;
+use std::io::Write;
 use std::mem::swap;
 use sqlx::sqlite::{SqlitePoolOptions, SqlitePool, SqliteQueryResult};
 use std::str::FromStr;
@@ -148,6 +149,10 @@ pub async fn sqlx_leave_group (data: &LeaveGroupData) -> tide::Result<(String)> 
         return Ok(("You are already not in this group.".to_string()));
     }
 
+    if sqlx_is_group_closed(data.group_id).await? {
+        return Ok(("You can't leave closed group.".to_string()))
+    }
+
     if sqlx_is_admin_in_group(data.user_id, data.group_id).await? {
         return Ok(("Admin can't leave its group.".to_string()));
     }
@@ -238,6 +243,10 @@ pub async fn sqlx_christmas (data: &ChristmasData) -> tide::Result<(String)> {
         return Ok(("There are less than 2 users in this group.".to_string()));
     }
 
+    if sqlx_is_group_closed(data.group_id).await? {
+        return Ok(("It's already been christmas here".to_string()));
+    }
+
     let connection = get_connection().await?;
     let tx = connection.begin().await.unwrap();
 
@@ -258,7 +267,7 @@ pub async fn sqlx_christmas (data: &ChristmasData) -> tide::Result<(String)> {
     let mut gift_recipients = users.to_vec();
     gift_recipients.shuffle(&mut rand::thread_rng());
 
-    println!("select[{}] users[{}] gift_recipient[{}]", select.len(), users.len(), gift_recipients.len());
+    //println!("select[{}] users[{}] gift_recipient[{}]", select.len(), users.len(), gift_recipients.len());
 
     for i in 0..(users.len()) {
         if gift_recipients[i] == users[i] {
@@ -330,16 +339,24 @@ pub async fn sqlx_signup (data: &SignupData) -> tide::Result<(String, String, u3
         return Ok(("Password is too short.".to_string(), "".to_string(), 0))
     }
 
+    if data.password.len() > 32 {
+        return Ok(("Password is too big.".to_string(), "".to_string(), 0))
+    }
+
     if data.name.len() < 5 {
         return Ok(("Username is too short.".to_string(), "".to_string(), 0))
     }
 
-    if !data.password.is_ascii() {
-        return Ok(("Password is not ascii-only.".to_string(), "".to_string(), 0))
+    if data.name.len() > 32 {
+        return Ok(("Username is too big.".to_string(), "".to_string(), 0))
     }
 
-    if !data.name.is_ascii() {
-        return Ok(("Username is not ascii-only.".to_string(), "".to_string(), 0))
+    if !data.password.is_ascii() && !data.password.chars().all(char::is_alphanumeric) {
+        return Ok(("Password is not alphanumeric ascii-only.".to_string(), "".to_string(), 0))
+    }
+
+    if !data.name.is_ascii() && !data.name.chars().all(char::is_alphanumeric) {
+        return Ok(("Username is not alphanumeric ascii-only.".to_string(), "".to_string(), 0))
     }
 
     let hash_psw = format!("{:x}", md5::compute::<&str>(&data.password));
@@ -527,4 +544,79 @@ async fn sqlx_user_count_in_group(group_id: u32) -> tide::Result<usize> {
     connection.close().await;
 
     Ok(result.len())
+}
+
+async fn sqlx_is_group_closed(group_id: u32) -> tide::Result<bool> {
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT * FROM groups WHERE group_id = ?")
+        .bind(group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return Ok(result[0].get::<u32, &str>("is_closed") != 0);
+}
+
+pub async fn sqlx_get_gift_recipient_id(data: &GetGiftRecipientIdData) -> tide::Result<(String, u32)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string(), 0));
+    }
+
+    if !sqlx_is_logged(&data.token, data.user_id).await? {
+        return Ok(("Wrong token.".to_string(), 0));
+    }
+
+    if !sqlx_is_group_real(data.group_id).await? {
+        return Ok(("Group does not exist.".to_string(), 0));
+    }
+
+    if !sqlx_is_in_group(data.user_id, data.group_id).await? {
+        return Ok(("User is not in this group.".to_string(), 0));
+    }
+
+    if !sqlx_is_group_closed(data.group_id).await? {
+        return Ok(("Group is not closed. Secret Santas are not defined.".to_string(), 0));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT gift_recipient_id FROM group_users WHERE user_id=? AND group_id=?")
+        .bind(data.user_id)
+        .bind(data.group_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.len() != 1 {
+        Ok(("Wrong data.".to_string(), 0))
+    } else {
+        Ok(("Success!".to_string(), result[0].get::<u32, &str>("gift_recipient_id")))
+    }
+}
+
+pub async fn sqlx_user_name_by_id(data: &GetUserNameByIdData) -> tide::Result<(String, String)> {
+    if !sqlx_is_user_real(data.user_id).await? {
+        return Ok(("User does not exist.".to_string(), "".to_string()));
+    }
+
+    let connection = get_connection().await?;
+    let tx = connection.begin().await.unwrap();
+
+    let result = sqlx::query("SELECT name FROM users WHERE user_id=?")
+        .bind(data.user_id)
+        .fetch_all(&connection).await?;
+
+    tx.commit().await?;
+    connection.close().await;
+
+    return if result.len() != 1 {
+        Ok(("Wrong data.".to_string(), "".to_string()))
+    } else {
+        Ok(("Success!".to_string(), result[0].get::<String, &str>("name")))
+    }
 }

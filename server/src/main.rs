@@ -6,7 +6,8 @@ use std::env;
 use tide::prelude::*;
 use tide::utils::async_trait;
 use crate::routes::{create_group, join_group, signup, login, logoff,
-                    set_admin, stop_admin, leave_group, delete_group, christmas};
+                    set_admin, stop_admin, leave_group, delete_group, christmas,
+                    get_gift_recipient_id, get_user_name_by_id};
 use tide::log;
 
 #[async_std::main]
@@ -26,12 +27,10 @@ async fn main () -> tide::Result<()> {
     app.at("/stop_admin").post(stop_admin); // вернуть статус (не меньше одного админа)
     app.at("/leave_group").post(leave_group); // вернуть статус (участник не админ, группа не закрыта или есть ещё хотя бы один админ)
     app.at("/delete_group").post(delete_group); // вернуть статус (участник админ)
+    app.at("/christmas").post(christmas); // вернуть статус (жеребьевка, запускает админ, группа закрывается)
 
-    app.at("/christmas").post(christmas); // вернуть статус (жеребьевка, запускает админ, группа закрывает)
-
-    //app.at("/get_group").get(()); // список участников группы, id группы (REST)
-    //app.at("/get_recipient").get(()); // информацию о получателе подарков (REST)
-
+    app.at("/get_gift_recipient_id").post(get_gift_recipient_id); // список участников группы, id группы (REST)
+    app.at("/get_user_name_by_id").post(get_user_name_by_id);
     app.listen("127.0.0.1:80").await?;
 
     Ok(())

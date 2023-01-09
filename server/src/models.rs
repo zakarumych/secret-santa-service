@@ -122,3 +122,25 @@ pub struct ChristmasData {
 pub struct ChristmasResp {
     pub status: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct GetGiftRecipientIdData {
+    pub token: String,
+    pub user_id: u32,
+    pub group_id: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetGiftRecipientIdResp {
+    pub gift_recipient_id: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetUserNameByIdData {
+    pub user_id: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetUserNameByIdResp {
+    pub name: String,
+}
