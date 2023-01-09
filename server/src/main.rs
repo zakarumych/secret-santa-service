@@ -3,6 +3,7 @@ mod routes;
 mod models;
 
 use std::env;
+use std::fmt::format;
 use dotenvy::dotenv;
 use tide::prelude::*;
 use tide::utils::async_trait;
@@ -33,7 +34,8 @@ async fn main () -> tide::Result<()> {
 
     app.at("/get_gift_recipient_id").post(get_gift_recipient_id); // список участников группы, id группы (REST)
     app.at("/get_user_name_by_id").post(get_user_name_by_id);
-    app.listen("127.0.0.1:80").await?;
+    app.listen(format!("{}:{}", std::env::var("ADDRESS").expect("ADDRESS must be set."),
+                                       std::env::var("PORT").expect("PORT"))).await?;
 
     Ok(())
 }
